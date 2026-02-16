@@ -3,20 +3,22 @@ import ReactDOM from "react-dom/client";
 import App from "./components/App.tsx";
 import "@picocss/pico/css/pico.min.css";
 import "./index.css";
-
-import { initTaskList, TaskList } from "./components/TaskList.tsx";
-
 import {
   Repo,
   BroadcastChannelNetworkAdapter,
   IndexedDBStorageAdapter,
   RepoContext,
-  isValidAutomergeUrl,
   DocHandle,
+  WebSocketClientAdapter,
 } from "@automerge/react";
 
+import { getOrCreateRoot, RootDocument } from "./rootDoc.ts";
+
 const repo = new Repo({
-  network: [new BroadcastChannelNetworkAdapter()],
+  network: [
+    new BroadcastChannelNetworkAdapter(),
+    new WebSocketClientAdapter("wss://sync.automerge.org"),
+  ],
   storage: new IndexedDBStorageAdapter(),
 });
 
@@ -26,21 +28,13 @@ declare global {
   interface Window {
     repo: Repo;
         // We also add the handle to the global window object for debugging
-    handle: DocHandle<TaskList>;
+    handle: DocHandle<RootDocument>;
   }
 }
 
 window.repo = repo;
-// Check the URL for a document to load
-const locationHash = document.location.hash.substring(1);
-// Depending if we have an AutomergeUrl, either find or create the document
-if (isValidAutomergeUrl(locationHash)) {
-  window.handle = await repo.find(locationHash);
-} else {
-  window.handle = repo.create<TaskList>(initTaskList());
-  // Set the location hash to the new document we just made.
-  document.location.hash = window.handle.url;
-}
+const rootDocUrl = getOrCreateRoot(repo);
+window.handle = await repo.find(rootDocUrl);
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <Suspense fallback={<div>Loading a document...</div>}>
