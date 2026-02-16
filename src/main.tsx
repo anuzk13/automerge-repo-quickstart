@@ -16,8 +16,8 @@ import { getOrCreateRoot, RootDocument } from "./rootDoc.ts";
 
 const repo = new Repo({
   network: [
-    new BroadcastChannelNetworkAdapter(),
-    new WebSocketClientAdapter("wss://sync.automerge.org"),
+    // BroadcastChannelNetworkAdapter disabled - causes slowdown waiting for other tabs
+    new WebSocketClientAdapter("ws://localhost:3030"),
   ],
   storage: new IndexedDBStorageAdapter(),
 });
